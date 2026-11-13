@@ -1,0 +1,114 @@
+name: Backend CI/CD
+
+# main  ──► test (PHP 8.4 + MySQL 8) ──► build assets ──► promote to "production" branch
+#                                                      └► IONOS cron (deploy/ionos/pull-deploy.sh)
+#                                                         installs it within ~1 minute ──► smoke test
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+  LIVE_URL: https://femalerider.mytechrcm.com
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: femalerider_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -proot" --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: femalerider_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, intl, pdo_mysql, bcmath, gd, zip, exif, sodium
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Code style (Pint)
+        run: vendor/bin/pint --test
+
+      - name: Test suite (Redis-less, shared-hosting mode included)
+        run: php artisan test
+        env:
+          PRESENCE_DRIVER: sql
+
+  release:
+    name: Promote to production
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Build front-end assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Push release commit to the production branch
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B production
+          git add -f public/build
+          git commit -m "release: ${GITHUB_SHA::12}" || echo "no asset changes"
+          git push --force origin production
+          echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Wait for IONOS to deploy and smoke-test
+        run: |
+          for i in $(seq 1 30); do
+            live=$(curl -fsS "$LIVE_URL/api/v1/health" | sed -n 's/.*"revision":"\([0-9a-f]*\)".*/\1/p' || true)
+            if [ "$live" = "$RELEASE_SHA" ]; then echo "Live revision $live"; break; fi
+            echo "waiting for deploy ($i/30) live=${live:-none}"; sleep 20
+          done
+          [ "$live" = "$RELEASE_SHA" ] || { echo "::error::Release not live after 10 minutes — check storage/logs/deploy.log on the server"; exit 1; }
+          curl -fsS "$LIVE_URL/up" >/dev/null
+          curl -fsS "$LIVE_URL/api/v1/config" | grep -q '"currency"'
+          curl -fsS -o /dev/null -w '%{http_code}\n' "$LIVE_URL/" | grep -q 200

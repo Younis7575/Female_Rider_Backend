@@ -1,0 +1,191 @@
+@import 'tailwindcss' source(none);
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
+@source not '../views/welcome.blade.php';
+@source not '../views/filament';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-display: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+    /* FemaleRider brand */
+    --color-crimson-50: #fff1f2;
+    --color-crimson-100: #ffe1e4;
+    --color-crimson-200: #ffc7ce;
+    --color-crimson-300: #fd9aa7;
+    --color-crimson-400: #f45e74;
+    --color-crimson-500: #e2304c;
+    --color-crimson-600: #c8102e;
+    --color-crimson-700: #a60c25;
+    --color-crimson-800: #7a0a12;
+    --color-crimson-900: #5c0710;
+    --color-crimson-950: #34030a;
+
+    --color-rose-accent: #f7b6c2;
+    --color-blush: #fff6f7;
+    --color-ink: #141014;
+    --color-ink-soft: #3d3539;
+
+    --shadow-soft: 0 1px 2px rgb(20 16 20 / 0.04), 0 8px 24px -8px rgb(20 16 20 / 0.10);
+    --shadow-lift: 0 2px 4px rgb(122 10 18 / 0.06), 0 24px 48px -16px rgb(122 10 18 / 0.28);
+
+    --animate-float: float 7s ease-in-out infinite;
+    --animate-pulse-ring: pulse-ring 2.2s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    @keyframes pulse-ring {
+        0% { transform: scale(0.6); opacity: 0.7; }
+        100% { transform: scale(2.4); opacity: 0; }
+    }
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+        -webkit-tap-highlight-color: transparent;
+    }
+    body {
+        @apply bg-white font-sans text-ink antialiased;
+        text-rendering: optimizeLegibility;
+    }
+    h1, h2, h3, h4 {
+        @apply font-display tracking-tight text-ink;
+    }
+    :focus-visible {
+        @apply outline-2 outline-offset-2 outline-crimson-600;
+    }
+    ::selection {
+        @apply bg-crimson-600 text-white;
+    }
+    [x-cloak] { display: none !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+}
+
+@utility btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+@layer components {
+    .container-site {
+        @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+    }
+    .btn-primary {
+        @apply btn bg-crimson-600 text-white shadow-lift hover:bg-crimson-700 focus-visible:outline-crimson-600;
+    }
+    .btn-light {
+        @apply btn bg-white text-crimson-800 shadow-soft hover:bg-crimson-50 focus-visible:outline-white;
+    }
+    .btn-ghost {
+        @apply btn border border-ink/15 bg-white/70 text-ink backdrop-blur hover:border-crimson-600 hover:text-crimson-700;
+    }
+    .btn-ghost-light {
+        @apply btn border border-white/40 text-white hover:bg-white/10 focus-visible:outline-white;
+    }
+    .eyebrow {
+        @apply inline-flex items-center gap-2 rounded-full bg-crimson-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-crimson-700 ring-1 ring-crimson-100;
+    }
+    .eyebrow-light {
+        @apply inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-rose-accent ring-1 ring-white/20;
+    }
+    .section {
+        @apply py-20 sm:py-28;
+    }
+    .section-title {
+        @apply mt-4 text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl;
+    }
+    .section-lead {
+        @apply mt-5 max-w-2xl text-base leading-relaxed text-ink-soft sm:text-lg;
+    }
+    .card {
+        @apply rounded-3xl border border-ink/[0.06] bg-white p-7 shadow-soft;
+    }
+    .bg-brand-gradient {
+        background-image: radial-gradient(120% 120% at 85% 0%, #e2304c 0%, #c8102e 32%, #7a0a12 78%, #4a0610 100%);
+    }
+    .bg-brand-soft {
+        background-image: radial-gradient(80% 60% at 100% 0%, #ffe1e4 0%, transparent 60%),
+            radial-gradient(60% 50% at 0% 100%, #fff1f2 0%, transparent 70%);
+    }
+    .text-gradient {
+        background-image: linear-gradient(100deg, #c8102e 0%, #e2304c 45%, #7a0a12 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .grain::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.08;
+        background-image: radial-gradient(rgb(255 255 255 / 0.9) 1px, transparent 1px);
+        background-size: 22px 22px;
+        mask-image: linear-gradient(to bottom, black, transparent 85%);
+    }
+
+    /* Forms */
+    .field-label {
+        @apply mb-1.5 block text-sm font-semibold text-ink;
+    }
+    .field {
+        @apply block w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-sm text-ink shadow-sm transition placeholder:text-ink/40 focus:border-crimson-600 focus:ring-4 focus:ring-crimson-600/15 focus:outline-none;
+    }
+    .field-error {
+        @apply mt-1.5 text-sm font-medium text-crimson-700;
+    }
+
+    /* CMS / legal prose */
+    .prose-site {
+        @apply max-w-none text-base leading-relaxed text-ink-soft;
+    }
+    .prose-site h2 { @apply mt-10 mb-3 text-2xl font-bold text-ink; }
+    .prose-site h3 { @apply mt-8 mb-2 text-xl font-bold text-ink; }
+    .prose-site h4 { @apply mt-6 mb-2 text-lg font-semibold text-ink; }
+    .prose-site p { @apply my-4; }
+    .prose-site ul { @apply my-4 list-disc space-y-1.5 pl-6; }
+    .prose-site ol { @apply my-4 list-decimal space-y-1.5 pl-6; }
+    .prose-site a { @apply font-medium text-crimson-700 underline decoration-crimson-300 underline-offset-2 hover:decoration-crimson-700; }
+    .prose-site strong { @apply font-semibold text-ink; }
+    .prose-site em { @apply text-ink-soft; }
+    .prose-site blockquote { @apply my-6 border-l-4 border-crimson-200 pl-4 italic; }
+    .prose-site table { @apply my-6 w-full text-left text-sm; }
+    .prose-site th, .prose-site td { @apply border-b border-ink/10 px-3 py-2; }
+
+    /* FAQ accordion (native <details>) */
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item[open] .faq-icon { transform: rotate(45deg); }
+
+    /* Leaflet tweaks for the trip share map */
+    .leaflet-container { font-family: var(--font-sans); }
+    .fr-marker { @apply relative flex items-center justify-center; }
+    .fr-marker-ring { @apply absolute inset-0 rounded-full bg-crimson-600/40 animate-pulse-ring; }
+}
+
+@layer utilities {
+    .js .reveal {
+        opacity: 0;
+        transform: translateY(18px);
+        transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+    .js .reveal.is-visible {
+        opacity: 1;
+        transform: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .js .reveal { opacity: 1; transform: none; }
+    }
+}
