@@ -154,7 +154,7 @@ return new class extends Migration
 
         // Database-level guarantee that a driver / customer has at most one active trip.
         $active = "'driver_assigned','driver_en_route','arrived','in_progress'";
-        if (DB::getDriverName() === 'mysql') {
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
             DB::statement("ALTER TABLE trips ADD COLUMN active_driver_lock BIGINT UNSIGNED GENERATED ALWAYS AS (IF(status IN ($active), driver_id, NULL)) STORED, ADD UNIQUE INDEX trips_active_driver_unique (active_driver_lock)");
             DB::statement("ALTER TABLE trips ADD COLUMN active_customer_lock BIGINT UNSIGNED GENERATED ALWAYS AS (IF(status IN ($active), customer_id, NULL)) STORED, ADD UNIQUE INDEX trips_active_customer_unique (active_customer_lock)");
         } elseif (in_array(DB::getDriverName(), ['pgsql', 'sqlite'])) {

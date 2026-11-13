@@ -22,7 +22,7 @@ push to main ─► GitHub Actions: Pint + 108 tests (PHP 8.4, MySQL 8, SQL pres
 No secrets are stored in GitHub; the server needs no inbound deploy access.
 
 ## One-time setup
-1. IONOS → Hosting → Databases → create a MySQL 8 database (note host, name, user, password).
+1. IONOS → Hosting → Databases → create a MariaDB database (note host, name, user, password).
 2. Subdomain `femalerider.mytechrcm.com` → webspace folder `/femalerider-api/public` (done), PHP 8.4.
 3. SSH in and run the bootstrap (asks for the database details at hidden prompts):
    ```bash
