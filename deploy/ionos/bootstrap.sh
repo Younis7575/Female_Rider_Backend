@@ -9,7 +9,12 @@ REPO_URL="${REPO_URL:-https://github.com/Younis7575/Female_Rider_Backend.git}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-production}"
 
 if [[ ! -d "$APP_DIR/.git" ]]; then
-  git clone --branch "$DEPLOY_BRANCH" --single-branch "$REPO_URL" "$APP_DIR"
+  # The folder may already exist (IONOS creates the subdomain's document root).
+  mkdir -p "$APP_DIR"
+  git -C "$APP_DIR" init -q
+  git -C "$APP_DIR" remote add origin "$REPO_URL"
+  git -C "$APP_DIR" fetch -q origin "$DEPLOY_BRANCH"
+  git -C "$APP_DIR" checkout -q -f -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
 fi
 # shellcheck source=/dev/null
 source "$APP_DIR/deploy/ionos/lib.sh"
