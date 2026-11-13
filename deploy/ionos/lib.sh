@@ -6,10 +6,11 @@ APP_DIR="${APP_DIR:-$HOME/femalerider-api}"
 REPO_URL="${REPO_URL:-https://github.com/Younis7575/Female_Rider_Backend.git}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-production}"
 
-# IONOS ships several PHP CLIs; pick the newest one that satisfies the app (>= 8.4).
+# IONOS ships several PHP CLIs; prefer the web version (8.4).
 detect_php() {
   if [[ -n "${PHP_BIN:-}" ]]; then echo "$PHP_BIN"; return; fi
-  for v in 8.5 8.4; do
+  # Match the web PHP version configured for the subdomain (IONOS: 8.4).
+  for v in 8.4 8.5; do
     for c in "/usr/bin/php${v}-cli" "php${v}-cli" "php${v}"; do
       if command -v "$c" >/dev/null 2>&1; then command -v "$c"; return; fi
     done
