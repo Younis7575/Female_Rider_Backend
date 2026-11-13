@@ -10,9 +10,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# A newer push supersedes an older run instead of queueing behind it.
 concurrency:
   group: backend-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   PHP_VERSION: '8.4'
@@ -67,6 +68,13 @@ jobs:
           npm ci
           npm run build
 
+      - name: Keep the built assets for the release job
+        uses: actions/upload-artifact@v4
+        with:
+          name: vite-build
+          path: public/build
+          retention-days: 3
+
       - name: Prepare environment
         run: |
           cp .env.example .env
@@ -92,15 +100,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - name: Reuse the assets built by the test job
+        uses: actions/download-artifact@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Build front-end assets
-        run: |
-          npm ci
-          npm run build
+          name: vite-build
+          path: public/build
 
       - name: Push release commit to the production branch
         run: |
@@ -112,14 +116,17 @@ jobs:
           git push --force origin production
           echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
+      - name: Tell the server to deploy now (cron is the fallback)
+        run: curl -fsS -X POST "$LIVE_URL/api/v1/deploy/notify" || echo "notify failed — the every-minute cron will deploy"
+
       - name: Wait for IONOS to deploy and smoke-test
         run: |
-          for i in $(seq 1 30); do
-            live=$(curl -fsS "$LIVE_URL/api/v1/health" | sed -n 's/.*"revision":"\([0-9a-f]*\)".*/\1/p' || true)
-            if [ "$live" = "$RELEASE_SHA" ]; then echo "Live revision $live"; break; fi
-            echo "waiting for deploy ($i/30) live=${live:-none}"; sleep 20
+          for i in $(seq 1 60); do
+            live=$(curl -fsS --max-time 10 "$LIVE_URL/api/v1/health" | sed -n 's/.*"revision":"\([0-9a-f]*\)".*/\1/p' || true)
+            if [ "$live" = "$RELEASE_SHA" ]; then echo "Live revision $live after $((i*5))s"; break; fi
+            echo "waiting for deploy ($i/60) live=${live:-none}"; sleep 5
           done
-          [ "$live" = "$RELEASE_SHA" ] || { echo "::error::Release not live after 10 minutes — check storage/logs/deploy.log on the server"; exit 1; }
+          [ "$live" = "$RELEASE_SHA" ] || { echo "::error::Release not live after 5 minutes — check storage/logs/deploy.log on the server"; exit 1; }
           curl -fsS "$LIVE_URL/up" >/dev/null
           curl -fsS "$LIVE_URL/api/v1/config" | grep -q '"currency"'
           curl -fsS -o /dev/null -w '%{http_code}\n' "$LIVE_URL/" | grep -q 200

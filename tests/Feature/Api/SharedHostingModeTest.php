@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Models\RideDispatch;
+use App\Services\Deploy\DeployTrigger;
 use App\Services\Dispatch\DriverPresenceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Redis;
@@ -55,5 +56,19 @@ class SharedHostingModeTest extends TestCase
     public function test_health_endpoint_reports_database_and_revision(): void
     {
         $this->getJson('/api/v1/health')->assertOk()->assertJsonPath('status', 'ok')->assertJsonPath('database', true)->assertJsonStructure(['revision', 'time']);
+    }
+
+    public function test_ci_deploy_notification_launches_a_debounced_pull_deploy_only_on_shared_hosting(): void
+    {
+        $trigger = \Mockery::mock(DeployTrigger::class);
+        $trigger->shouldReceive('launch')->once()->andReturnTrue();
+        $this->app->instance(DeployTrigger::class, $trigger);
+
+        config(['femalerider.shared_hosting' => false]);
+        $this->postJson('/api/v1/deploy/notify')->assertNotFound();
+
+        config(['femalerider.shared_hosting' => true]);
+        $this->postJson('/api/v1/deploy/notify')->assertStatus(202)->assertJsonPath('queued', true);
+        $this->postJson('/api/v1/deploy/notify')->assertStatus(202)->assertJsonPath('queued', false); // debounced
     }
 }

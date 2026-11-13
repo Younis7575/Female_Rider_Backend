@@ -28,10 +28,15 @@ TARGET="$(git rev-parse "origin/$DEPLOY_BRANCH")"
   if ! (
     set -e
     artisan down --retry=15 --refresh=15 >/dev/null 2>&1 || true
+    OLD_LOCK="$(git rev-parse "$CURRENT:composer.lock" 2>/dev/null || true)"
     git reset --hard --quiet "$TARGET"
     # lib.sh may have changed with the new release
     source "$APP_DIR/deploy/ionos/lib.sh"
-    composer_install
+    if [[ "$OLD_LOCK" != "$(git rev-parse HEAD:composer.lock)" || ! -f "$APP_DIR/vendor/autoload.php" ]]; then
+      composer_install
+    else
+      echo "composer.lock unchanged — skipping composer install"
+    fi
     optimize_app
     echo "$TARGET" > "$APP_DIR/REVISION"
   ); then

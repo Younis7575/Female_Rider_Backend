@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ContentController;
+use App\Http\Controllers\Api\V1\DeployController;
 use App\Http\Controllers\Api\V1\DriverController;
 use App\Http\Controllers\Api\V1\DriverFinanceController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -31,6 +32,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // ---- Public ----------------------------------------------------------
     Route::get('config', [ContentController::class, 'config'])->name('config');
     Route::get('health', [ContentController::class, 'health'])->name('health');
+    Route::post('deploy/notify', [DeployController::class, 'notify'])->middleware('throttle:10,1')->name('deploy.notify');
     Route::get('faqs', [ContentController::class, 'faqs']);
     Route::get('pages/{slug}', [ContentController::class, 'page']);
 
