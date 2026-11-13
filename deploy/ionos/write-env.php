@@ -15,8 +15,10 @@ $env = strtr($env, [
     '__DB_USERNAME__' => (string) getenv('DB_USERNAME'),
     '__DB_PASSWORD__' => $quote((string) getenv('DB_PASSWORD')),
 ]);
-$env = preg_replace('/^OTP_TEST_NUMBERS=.*$/m', 'OTP_TEST_NUMBERS='.preg_replace('/[^+0-9,]/', '', (string) getenv('OTP_NUMBERS')), $env);
-$env = preg_replace('/^OTP_TEST_CODE=.*$/m', 'OTP_TEST_CODE='.preg_replace('/\D/', '', (string) getenv('OTP_CODE')), $env);
+if (getenv('OTP_NUMBERS') !== false) {
+    $env = preg_replace('/^OTP_TEST_NUMBERS=.*$/m', 'OTP_TEST_NUMBERS='.preg_replace('/[^+0-9,]/', '', (string) getenv('OTP_NUMBERS')), $env);
+    $env = preg_replace('/^OTP_TEST_CODE=.*$/m', 'OTP_TEST_CODE='.preg_replace('/\D/', '', (string) getenv('OTP_CODE')), $env);
+}
 file_put_contents($file, $env);
 chmod($file, 0600);
 echo "Wrote $file\n";
