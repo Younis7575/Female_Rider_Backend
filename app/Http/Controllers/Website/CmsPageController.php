@@ -9,7 +9,7 @@ use Illuminate\View\View;
 class CmsPageController extends Controller
 {
     /** Slugs served at the site root (e.g. /terms). Other CMS pages live under /pages/{slug}. */
-    public const LEGAL_SLUGS = ['terms', 'privacy', 'eligibility-policy', 'driver-agreement'];
+    public const LEGAL_SLUGS = ['terms', 'privacy', 'eligibility-policy', 'driver-agreement', 'delete-account'];
 
     public function show(string $slug): View
     {
