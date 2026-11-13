@@ -57,6 +57,16 @@ jobs:
 
       - run: composer install --prefer-dist --no-interaction --no-progress
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Build front-end assets (website views need the Vite manifest)
+        run: |
+          npm ci
+          npm run build
+
       - name: Prepare environment
         run: |
           cp .env.example .env
