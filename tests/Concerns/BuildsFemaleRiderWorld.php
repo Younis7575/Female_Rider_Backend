@@ -84,10 +84,13 @@ trait BuildsFemaleRiderWorld
         return $u->fresh(['driverProfile', 'roles']);
     }
 
-    protected function makeAdmin(string $role = 'super_admin'): AdminUser
+    protected function makeAdmin(string $role = 'super_admin', bool $withMfa = true): AdminUser
     {
         $a = AdminUser::query()->create(['name' => ucfirst($role), 'email' => $role.Str::random(4).'@test.local', 'password' => 'Password!123456', 'is_active' => true]);
         $a->assignRole($role);
+        if ($withMfa) {
+            $a->saveAppAuthenticationSecret('JBSWY3DPEHPK3PXP'); // MFA is mandatory for privileged admins
+        }
 
         return $a;
     }

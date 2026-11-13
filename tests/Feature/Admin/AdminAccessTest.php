@@ -125,10 +125,22 @@ class AdminAccessTest extends TestCase
 
     public function test_admin_mfa_contract_is_implemented(): void
     {
-        $admin = $this->makeAdmin('finance_manager');
+        $admin = $this->makeAdmin('finance_manager', withMfa: false);
         $this->assertTrue($admin->requiresMfa());
         $admin->saveAppAuthenticationSecret('JBSWY3DPEHPK3PXP');
         $this->assertTrue($admin->fresh()->hasMfa());
         $this->assertNotEquals('JBSWY3DPEHPK3PXP', \DB::table('admin_users')->where('id', $admin->id)->value('app_authentication_secret'), 'MFA secret must be encrypted at rest');
+    }
+
+    public function test_privileged_admin_without_two_factor_is_forced_to_set_it_up(): void
+    {
+        $admin = $this->makeAdmin('super_admin', withMfa: false);
+
+        $res = $this->actingAs($admin, 'admin')->get('/admin');
+        $res->assertRedirect();
+        $this->assertStringContainsString('multi-factor', $res->headers->get('Location'));
+
+        $admin->saveAppAuthenticationSecret('JBSWY3DPEHPK3PXP');
+        $this->actingAs($admin->fresh(), 'admin')->get('/admin')->assertOk();
     }
 }
