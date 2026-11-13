@@ -36,7 +36,10 @@ fi
 
 mkdir -p "$APP_DIR/storage/app/private/firebase" "$APP_DIR/storage/logs"
 composer_install
-grep -q '^APP_KEY=base64' "$APP_DIR/.env" || artisan key:generate --force
+if ! grep -q '^APP_KEY=base64' "$APP_DIR/.env"; then
+  KEY="base64:$("$PHP" -r 'echo base64_encode(random_bytes(32));')"
+  sed -i "s|^APP_KEY=.*|APP_KEY=$KEY|" "$APP_DIR/.env"
+fi
 artisan migrate --force
 artisan db:seed --class='Database\Seeders\RolesAndPermissionsSeeder' --force
 artisan db:seed --class='Database\Seeders\PlatformConfigSeeder' --force

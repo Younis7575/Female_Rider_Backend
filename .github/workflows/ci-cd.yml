@@ -60,7 +60,7 @@ jobs:
       - name: Prepare environment
         run: |
           cp .env.example .env
-          php artisan key:generate
+          sed -i "s|^APP_KEY=.*|APP_KEY=base64:$(php -r 'echo base64_encode(random_bytes(32));')|" .env
 
       - name: Code style (Pint)
         run: vendor/bin/pint --test

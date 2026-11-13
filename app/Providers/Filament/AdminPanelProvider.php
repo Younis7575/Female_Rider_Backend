@@ -36,7 +36,17 @@ class AdminPanelProvider extends PanelProvider
             ->multiFactorAuthentication(
                 [AppAuthentication::make()->recoverable()],
                 // MFA is mandatory for privileged roles (configurable for local development).
-                isRequired: fn () => (bool) config('femalerider.admin.mfa_required') && (Auth::guard('admin')->user()?->requiresMfa() ?? false),
+                isRequired: function (): bool {
+                    if (! config('femalerider.admin.mfa_required')) {
+                        return false;
+                    }
+                    // Evaluated once at boot to register the set-up page: no session in the console.
+                    if (app()->runningInConsole() && ! app()->runningUnitTests()) {
+                        return true;
+                    }
+
+                    return Auth::guard('admin')->user()?->requiresMfa() ?? true;
+                },
             )
             ->brandName('FemaleRider Admin')
             ->brandLogo(asset('images/admin-logo.png'))
