@@ -28,7 +28,13 @@ trait BuildsFemaleRiderWorld
     protected function bootWorld(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, PlatformConfigSeeder::class]);
-        Redis::connection()->flushdb();
+        if (config('femalerider.dispatch.presence_driver') !== 'sql') {
+            try {
+                Redis::connection()->flushdb();
+            } catch (\Throwable) {
+                // No Redis (CI / shared hosting): presence falls back to SQL.
+            }
+        }
     }
 
     protected function category(string $slug = 'mini'): VehicleCategory
