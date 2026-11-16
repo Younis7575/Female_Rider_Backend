@@ -88,6 +88,12 @@ class DriverResource extends Resource
                     TextEntry::make('license_expiry')->date()->color(fn ($record) => $record->license_expiry?->isPast() ? 'danger' : ($record->license_expiry?->lt(now()->addDays(30)) ? 'warning' : null)),
                     TextEntry::make('address'),
                     TextEntry::make('emergency_contact_name'),
+                    TextEntry::make('guardian')->label('Guardian (WhatsApp alerts)')
+                        ->state(fn (DriverProfile $record) => $record->hasGuardian()
+                            ? trim($record->guardian_name.($record->guardian_relationship ? " ({$record->guardian_relationship})" : '')).' · +'.substr($record->guardian_whatsapp, 0, 2).' ••• ••'.substr($record->guardian_whatsapp, -3)
+                            : 'Not added')
+                        ->color(fn (DriverProfile $record) => $record->hasGuardian() ? null : 'danger')
+                        ->helperText(fn (DriverProfile $record) => $record->hasGuardian() ? ($record->guardian_alerts_enabled ? 'Location shared on pickup and drop-off' : 'Alerts turned off by driver') : null),
                     TextEntry::make('serviceZone.name')->label('Zone')->placeholder('—'),
                     TextEntry::make('submitted_at')->dateTime()->placeholder('Not submitted'),
                 ]),
@@ -207,7 +213,7 @@ class DriverResource extends Resource
 
     public static function getRelations(): array
     {
-        return [RelationManagers\DocumentsRelationManager::class, RelationManagers\DriverTripsRelationManager::class];
+        return [RelationManagers\DocumentsRelationManager::class, RelationManagers\DriverTripsRelationManager::class, RelationManagers\GuardianAlertsRelationManager::class];
     }
 
     public static function getPages(): array

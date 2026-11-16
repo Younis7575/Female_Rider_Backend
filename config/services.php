@@ -49,6 +49,20 @@ return [
     ],
 
     // Free / OpenStreetMap-based providers (no card required). Used when no Google key is set.
+    // WhatsApp Business Cloud API (Meta). driver "log" writes messages to the log instead of sending.
+    'whatsapp' => [
+        'driver' => env('WHATSAPP_DRIVER', 'log'),
+        'token' => env('WHATSAPP_ACCESS_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'api_version' => env('WHATSAPP_API_VERSION', 'v21.0'),
+        'language' => env('WHATSAPP_TEMPLATE_LANGUAGE', 'en'),
+        'templates' => [
+            'trip_started' => env('WHATSAPP_TEMPLATE_TRIP_STARTED', 'guardian_trip_started'),
+            'trip_completed' => env('WHATSAPP_TEMPLATE_TRIP_COMPLETED', 'guardian_trip_completed'),
+            'test' => env('WHATSAPP_TEMPLATE_GUARDIAN_ADDED', 'guardian_added'),
+        ],
+    ],
+
     'osm' => [
         'geoapify_key' => env('GEOAPIFY_API_KEY'),          // geocoding & place search (geoapify.com, free tier)
         'openrouteservice_key' => env('OPENROUTESERVICE_API_KEY'), // driving routes (openrouteservice.org, free tier)

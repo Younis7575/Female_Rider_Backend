@@ -98,6 +98,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('profile', [DriverController::class, 'profile']);
             Route::get('status', [DriverController::class, 'profile']);
             Route::put('profile', [DriverController::class, 'updateProfile']);
+            Route::put('guardian', [DriverController::class, 'updateGuardian']);
+            Route::post('guardian/test', [DriverController::class, 'testGuardian'])->middleware('throttle:3,10');
             Route::put('vehicle', [DriverController::class, 'updateVehicle']);
             Route::get('documents', [DriverController::class, 'documents']);
             Route::post('documents', [DriverController::class, 'uploadDocument'])->middleware('throttle:30,10');

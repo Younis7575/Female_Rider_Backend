@@ -35,7 +35,13 @@ class DriverOnboardingTest extends TestCase
             'full_name' => 'Sara Test', 'cnic_number' => '42101-1234567-1', 'date_of_birth' => '1995-01-01',
             'license_number' => 'KHI-998877', 'license_expiry' => now()->addYears(2)->toDateString(), 'address' => 'Karachi',
             'emergency_contact_name' => 'Mum', 'emergency_contact_phone' => '+923001234567',
-        ])->assertOk();
+        ])->assertStatus(422)->assertJsonPath('error.code', 'validation_failed')->assertJsonStructure(['error' => ['details' => ['guardian_name', 'guardian_whatsapp', 'guardian_consent']]]);
+        $api->putJson('/api/v1/driver/profile', [
+            'full_name' => 'Sara Test', 'cnic_number' => '42101-1234567-1', 'date_of_birth' => '1995-01-01',
+            'license_number' => 'KHI-998877', 'license_expiry' => now()->addYears(2)->toDateString(), 'address' => 'Karachi',
+            'emergency_contact_name' => 'Mum', 'emergency_contact_phone' => '+923001234567',
+            'guardian_name' => 'Ayesha', 'guardian_relationship' => 'Mother', 'guardian_whatsapp' => '0300 7654321', 'guardian_consent' => true,
+        ])->assertOk()->assertJsonPath('data.guardian.configured', true)->assertJsonPath('data.guardian.whatsapp_masked', '+92 ••• ••321');
         $this->assertStringEndsWith('67-1', $api->getJson('/api/v1/driver/profile')->json('data.cnic_number_masked'));
 
         $api->putJson('/api/v1/driver/vehicle', ['vehicle_category_id' => $this->category('mini')->id, 'make' => 'Suzuki', 'model' => 'Alto', 'color' => 'Red', 'year' => 2021, 'plate_number' => 'abc 123'])

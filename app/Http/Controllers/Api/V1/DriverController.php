@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DriverDocumentResource;
 use App\Http\Resources\DriverProfileResource;
@@ -18,12 +19,15 @@ use App\Models\VehicleCategory;
 use App\Services\Dispatch\DispatchService;
 use App\Services\Dispatch\DriverPresenceService;
 use App\Services\Driver\DriverOnboardingService;
+use App\Services\Guardian\GuardianAlertService;
 use App\Services\Rides\NegotiationService;
 use App\Services\Trips\TripService;
+use App\Services\WhatsApp\WhatsAppService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /** Driver onboarding, availability, incoming requests and negotiation. */
 class DriverController extends Controller
@@ -49,10 +53,70 @@ class DriverController extends Controller
             'address' => ['required', 'string', 'max:255'],
             'emergency_contact_name' => ['required', 'string', 'max:80'],
             'emergency_contact_phone' => [$req('emergency_contact_phone'), 'string', 'regex:/^\+?[\d\s\-]{7,16}$/'],
-        ], ['date_of_birth.before' => 'You must be at least 18 years old.']);
+            ...$this->guardianRules($existing),
+        ], ['date_of_birth.before' => 'You must be at least 18 years old.', 'guardian_consent.accepted' => 'Please confirm your guardian agreed to receive WhatsApp location messages.']);
+        $data = $this->normalizeGuardian($data);
         $data = array_filter($data, fn ($v) => $v !== null && $v !== '');
 
         return ApiResponse::ok(new DriverProfileResource($this->onboarding->saveProfile($request->user(), $data)), 'Driver details saved.');
+    }
+
+    /** Guardian WhatsApp rules; the number is required once unless already stored (it is returned masked). */
+    private function guardianRules(?DriverProfile $existing, bool $standalone = false): array
+    {
+        $required = config('femalerider.guardian.required_for_drivers') || $standalone;
+        $hasNumber = filled($existing?->guardian_whatsapp);
+
+        return [
+            'guardian_name' => [$required && ($standalone || blank($existing?->guardian_name)) ? 'required' : 'nullable', 'string', 'max:80'],
+            'guardian_relationship' => ['nullable', 'string', 'max:30'],
+            'guardian_whatsapp' => [$required && ! $hasNumber ? 'required' : 'nullable', 'string', 'regex:/^\+?[\d\s\-]{10,16}$/'],
+            'guardian_consent' => [$required && ! $existing?->guardian_consent_at ? 'accepted' : 'nullable', 'boolean'],
+            'guardian_alerts_enabled' => ['nullable', 'boolean'],
+        ];
+    }
+
+    private function normalizeGuardian(array $data): array
+    {
+        if (filled($data['guardian_whatsapp'] ?? null)) {
+            $norm = WhatsAppService::normalize($data['guardian_whatsapp']);
+            if (! $norm) {
+                throw ValidationException::withMessages(['guardian_whatsapp' => 'Enter a valid WhatsApp number, e.g. 0300 1234567.']);
+            }
+            $data['guardian_whatsapp'] = $norm;
+        }
+        if (! empty($data['guardian_consent'])) {
+            $data['guardian_consent_at'] = now();
+        }
+        unset($data['guardian_consent']);
+
+        return $data;
+    }
+
+    /** Approved drivers can change their guardian at any time (outside the application flow). */
+    public function updateGuardian(Request $request): JsonResponse
+    {
+        $profile = $this->onboarding->profileFor($request->user());
+        $data = $this->normalizeGuardian(array_filter($request->validate($this->guardianRules($profile, true)), fn ($v) => $v !== null && $v !== ''));
+        $changedNumber = isset($data['guardian_whatsapp']) && $data['guardian_whatsapp'] !== $profile->guardian_whatsapp;
+        $profile->fill($data)->save();
+        AuditLog::record('driver.guardian_updated', $profile, [], [], ['number_changed' => $changedNumber], $request->user());
+        if ($changedNumber && $profile->guardian_alerts_enabled) {
+            app(GuardianAlertService::class)->queueTest($profile);
+        }
+
+        return ApiResponse::ok(new DriverProfileResource($profile->fresh()), $changedNumber ? 'Guardian saved. We sent them a WhatsApp message.' : 'Guardian saved.');
+    }
+
+    public function testGuardian(Request $request): JsonResponse
+    {
+        $profile = $this->onboarding->profileFor($request->user());
+        if (! $profile->hasGuardian()) {
+            throw new BusinessRuleException('Add your guardian\'s WhatsApp number first.', 'guardian_missing', 422);
+        }
+        app(GuardianAlertService::class)->queueTest($profile);
+
+        return ApiResponse::ok(null, 'Test message sent to your guardian on WhatsApp.');
     }
 
     public function updateVehicle(Request $request): JsonResponse

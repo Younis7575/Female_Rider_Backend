@@ -17,6 +17,7 @@ use App\Services\Dispatch\DriverPresenceService;
 use App\Services\Finance\CouponService;
 use App\Services\Finance\LedgerService;
 use App\Services\Finance\PaymentService;
+use App\Services\Guardian\GuardianAlertService;
 use App\Services\Notifications\NotificationService;
 use App\Support\Geo;
 use App\Support\Money;
@@ -85,6 +86,7 @@ class TripService
 
             $trip = $this->transition($trip, TripStatus::InProgress, 'driver', $driver->id, ['started_at' => now()], [], false);
             DB::afterCommit(fn () => $this->notifications->send($trip->customer, 'trip.started', 'Trip started', 'Enjoy your ride. SOS is always available in the app.', ['trip_id' => $trip->uuid, 'screen' => 'trip']));
+            DB::afterCommit(fn () => app(GuardianAlertService::class)->queueForTrip($trip, 'trip_started'));
 
             return $trip;
         });
@@ -150,6 +152,7 @@ class TripService
         });
 
         $this->presence->markAvailable($driver->driverProfile->fresh());
+        app(GuardianAlertService::class)->queueForTrip($trip, 'trip_completed');
         $this->notifications->send($trip->customer, 'trip.completed', 'Trip completed',
             'Amount due: '.$trip->currency.' '.number_format($trip->amount_due).'. Please rate your driver.', ['trip_id' => $trip->uuid, 'screen' => 'trip_receipt']);
 

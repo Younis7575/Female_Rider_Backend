@@ -106,6 +106,9 @@ class DriverOnboardingService
                 $missing[] = str_replace('_', ' ', $f);
             }
         }
+        if (config('femalerider.guardian.required_for_drivers') && ! $profile->hasGuardian()) {
+            $missing[] = 'guardian WhatsApp number';
+        }
         if (! $profile->primaryVehicle) {
             $missing[] = 'vehicle details';
         }

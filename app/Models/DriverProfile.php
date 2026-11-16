@@ -22,9 +22,10 @@ class DriverProfile extends Model
         'full_name', 'cnic_number', 'date_of_birth', 'license_number', 'license_expiry', 'address',
         'emergency_contact_name', 'emergency_contact_phone', 'service_zone_id',
         'payout_method', 'payout_account_title', 'payout_account_number',
+        'guardian_name', 'guardian_relationship', 'guardian_whatsapp', 'guardian_alerts_enabled', 'guardian_consent_at',
     ];
 
-    protected $hidden = ['review_notes', 'cnic_number', 'license_number', 'payout_account_number', 'emergency_contact_phone'];
+    protected $hidden = ['review_notes', 'cnic_number', 'license_number', 'payout_account_number', 'emergency_contact_phone', 'guardian_whatsapp'];
 
     protected function casts(): array
     {
@@ -34,6 +35,9 @@ class DriverProfile extends Model
             'license_number' => 'encrypted',
             'emergency_contact_phone' => 'encrypted',
             'payout_account_number' => 'encrypted',
+            'guardian_whatsapp' => 'encrypted',
+            'guardian_alerts_enabled' => 'boolean',
+            'guardian_consent_at' => 'datetime',
             'date_of_birth' => 'date',
             'license_expiry' => 'date',
             'agreement_accepted_at' => 'datetime',
@@ -121,5 +125,15 @@ class DriverProfile extends Model
         }
 
         return $issues;
+    }
+
+    public function guardianAlerts(): HasMany
+    {
+        return $this->hasMany(GuardianAlert::class);
+    }
+
+    public function hasGuardian(): bool
+    {
+        return filled($this->guardian_whatsapp) && filled($this->guardian_name);
     }
 }

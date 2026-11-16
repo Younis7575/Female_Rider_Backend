@@ -59,6 +59,13 @@ return [
     | Shared hosting (no daemons): the scheduler — driven by a single cron entry —
     | also runs a short-lived queue worker every minute.
     */
+    // Guardian WhatsApp location alerts (driver picks up a rider / completes a ride).
+    'guardian' => [
+        'enabled' => (bool) env('GUARDIAN_ALERTS_ENABLED', true),
+        'required_for_drivers' => (bool) env('GUARDIAN_REQUIRED_FOR_DRIVERS', true),
+        'live_location_max_age_seconds' => 300,
+    ],
+
     'shared_hosting' => (bool) env('SHARED_HOSTING', false),
 
     'trip' => [
