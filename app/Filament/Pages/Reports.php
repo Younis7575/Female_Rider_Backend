@@ -3,8 +3,8 @@
 namespace App\Filament\Pages;
 
 use App\Models\AuditLog;
+use App\Models\DriverDeposit;
 use App\Models\DriverOnlineSession;
-use App\Models\DriverPayout;
 use App\Models\Incident;
 use App\Models\LedgerEntry;
 use App\Models\Payment;
@@ -135,8 +135,8 @@ class Reports extends Page
                 'Payment success' => ($p = Payment::query()->whereBetween('created_at', [$from, $to])->count()) ? round(Payment::query()->whereBetween('created_at', [$from, $to])->where('status', 'paid')->count() / $p * 100, 1).'%' : '—',
                 'Refunds processed' => 'PKR '.number_format((float) Refund::query()->whereBetween('processed_at', [$from, $to])->sum('amount')),
                 'Cash outstanding (unconfirmed)' => 'PKR '.number_format((float) Payment::query()->where('status', 'pending')->where('method', 'cash')->sum('amount')),
-                'Payouts paid' => 'PKR '.number_format((float) DriverPayout::query()->whereBetween('paid_at', [$from, $to])->sum('amount')),
-                'Payout liability (owed to drivers)' => 'PKR '.number_format((float) $driverBalances->where('bal', '>', 0)->sum('bal')),
+                'Driver top-ups approved' => 'PKR '.number_format((float) DriverDeposit::query()->where('status', 'approved')->whereBetween('reviewed_at', [$from, $to])->sum('approved_amount')),
+                'Prepaid driver balances' => 'PKR '.number_format((float) $driverBalances->where('bal', '>', 0)->sum('bal')),
                 'Commission receivable (cash trips)' => 'PKR '.number_format(abs((float) $driverBalances->where('bal', '<', 0)->sum('bal'))),
             ],
             'supply' => [

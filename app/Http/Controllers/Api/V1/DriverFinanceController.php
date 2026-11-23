@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\DriverPayoutResource;
 use App\Http\Resources\LedgerEntryResource;
 use App\Models\DriverDeposit;
 use App\Models\DriverOnlineSession;
 use App\Models\DriverPayout;
 use App\Models\LedgerEntry;
+use App\Models\SystemSetting;
 use App\Models\Trip;
 use App\Services\Finance\LedgerService;
 use App\Services\Finance\ManualPaymentService;
-use App\Services\Finance\PayoutService;
 use App\Support\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +19,7 @@ use Illuminate\Http\Request;
 
 class DriverFinanceController extends Controller
 {
-    public function __construct(private LedgerService $ledger, private PayoutService $payouts) {}
+    public function __construct(private LedgerService $ledger) {}
 
     private function stats(int $driverId, Carbon $from, Carbon $to): array
     {
@@ -60,7 +59,8 @@ class DriverFinanceController extends Controller
             'today' => $today + ['online_hours' => $profile ? $this->onlineHours($profile->id, now()->startOfDay()) : 0],
             'week' => $week + ['online_hours' => $profile ? $this->onlineHours($profile->id, now()->startOfWeek()) : 0],
             'balance' => $this->ledger->driverBalance($user->id),
-            'available_for_payout' => max(0, $this->payouts->availableBalance($user->id)),
+            'amount_due' => max(0, round(-$this->ledger->driverBalance($user->id), 2)),
+            'min_balance' => (float) SystemSetting::get('driver.min_balance', -500),
             'currency' => config('femalerider.currency'),
             'compliance_issues' => $profile?->complianceIssues() ?? [],
             'expiring_documents' => $profile ? $profile->latestDocuments()->filter(fn ($d) => $d->expiry_date && $d->expiry_date->between(now(), now()->addDays(30)))->map(fn ($d) => ['type' => $d->type, 'label' => $d->label(), 'expiry_date' => $d->expiry_date->toDateString()])->values() : [],
@@ -121,19 +121,6 @@ class DriverFinanceController extends Controller
         $entries = LedgerEntry::query()->with('trip')->where('account', 'driver_payable')->where('user_id', $request->user()->id)->latest('id')->paginate(30);
 
         return ApiResponse::ok(LedgerEntryResource::collection($entries), null, 200, ['balance' => $this->ledger->driverBalance($request->user()->id)]);
-    }
-
-    public function payouts(Request $request): JsonResponse
-    {
-        return ApiResponse::ok(DriverPayoutResource::collection($request->user()->hasMany(DriverPayout::class, 'driver_id')->latest('id')->paginate(20)),
-            null, 200, ['available_for_payout' => max(0, $this->payouts->availableBalance($request->user()->id)), 'min_payout' => (float) config('femalerider.finance.min_payout_amount')]);
-    }
-
-    public function requestPayout(Request $request): JsonResponse
-    {
-        $data = $request->validate(['amount' => ['required', 'numeric', 'min:1']]);
-
-        return ApiResponse::created(new DriverPayoutResource($this->payouts->request($request->user(), (float) $data['amount'])), 'Payout requested.');
     }
 
     /** FemaleRider's JazzCash account + the driver's current balance (negative = she owes). */

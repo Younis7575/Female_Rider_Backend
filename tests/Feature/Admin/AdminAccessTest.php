@@ -89,14 +89,13 @@ class AdminAccessTest extends TestCase
         $this->get('/admin/support-tickets')->assertOk();
         $this->get('/admin/drivers')->assertOk();                 // can view drivers
         $this->get('/admin/eligibility-reviews')->assertForbidden(); // cannot review identity
-        $this->get('/admin/payouts')->assertForbidden();
         $this->get('/admin/refunds')->assertForbidden();
         $this->get('/admin/admin-users')->assertForbidden();
 
         $this->flushSession();
         $finance = $this->makeAdmin('finance_manager');
         $this->actingAs($finance, 'admin');
-        $this->get('/admin/payouts')->assertOk();
+        $this->get('/admin/driver-deposits')->assertOk();
         $this->get('/admin/incidents')->assertForbidden();
         $this->get('/admin/system-settings')->assertForbidden();
 

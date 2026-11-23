@@ -28,7 +28,7 @@ class User extends Authenticatable
         'notification_preferences', 'privacy_preferences',
     ];
 
-    protected $hidden = ['remember_token'];
+    protected $hidden = ['remember_token', 'password'];
 
     protected function casts(): array
     {
@@ -40,6 +40,8 @@ class User extends Authenticatable
             'privacy_preferences' => 'array',
             'rating_avg' => 'decimal:2',
             'phone_verified_at' => 'datetime',
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
             'profile_completed_at' => 'datetime',
             'last_login_at' => 'datetime',
             'deletion_requested_at' => 'datetime',

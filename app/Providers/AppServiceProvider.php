@@ -49,9 +49,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', fn (Request $r) => Limit::perMinute(120)->by($r->user()?->id ?: $r->ip()));
         RateLimiter::for('otp', fn (Request $r) => [
             Limit::perMinute(5)->by('otp-ip:'.$r->ip()),
-            Limit::perMinute(3)->by('otp-phone:'.$r->input('phone')),
+            Limit::perMinute(3)->by('otp-id:'.strtolower((string) ($r->input('email') ?? $r->input('login') ?? $r->input('phone') ?? $r->ip()))),
         ]);
-        RateLimiter::for('otp-verify', fn (Request $r) => Limit::perMinute(10)->by('otp-verify:'.$r->ip().'|'.$r->input('phone')));
+        RateLimiter::for('otp-verify', fn (Request $r) => Limit::perMinute(10)->by('otp-verify:'.$r->ip().'|'.strtolower((string) ($r->input('email') ?? $r->input('phone')))));
         RateLimiter::for('booking', fn (Request $r) => Limit::perMinute(10)->by('book:'.$r->user()?->id));
         RateLimiter::for('location', fn (Request $r) => Limit::perMinute(40)->by('loc:'.$r->user()?->id));
         RateLimiter::for('chat', fn (Request $r) => Limit::perMinute(30)->by('chat:'.$r->user()?->id));

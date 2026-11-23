@@ -19,6 +19,7 @@ use App\Models\UserRole;
 use App\Models\Vehicle;
 use App\Services\Dispatch\DispatchService;
 use App\Services\Dispatch\DriverPresenceService;
+use App\Services\Finance\LedgerService;
 use App\Services\Notifications\NotificationService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -111,9 +112,6 @@ class DriverOnboardingService
         }
         if (! $profile->primaryVehicle) {
             $missing[] = 'vehicle details';
-        }
-        if (blank($profile->payout_method) || blank($profile->payout_account_number)) {
-            $missing[] = 'payout account';
         }
         $uploaded = $profile->documents->whereNotIn('status', ['rejected'])->pluck('type')->unique()->all();
         foreach (DriverProfile::REQUIRED_DOCUMENTS as $type) {
@@ -248,6 +246,13 @@ class DriverOnboardingService
         }
         if ($user->activeTrip() && $user->activeTrip()->customer_id === $user->id) {
             throw new BusinessRuleException('You have an active trip as a customer.', 'active_trip_exists', 409);
+        }
+        // inDrive-style prepaid balance: commission is deducted from it after every ride, and a
+        // driver whose balance falls below the limit must top up (JazzCash) before going online.
+        $minBalance = (float) SystemSetting::get('driver.min_balance', -500);
+        $balance = app(LedgerService::class)->driverBalance($user->id);
+        if ($balance < $minBalance) {
+            throw new BusinessRuleException('Your balance is PKR '.number_format($balance, 0).'. Please add balance (Pay) to go online.', 'low_balance', 409, ['balance' => $balance, 'min_balance' => $minBalance]);
         }
         $zone = ServiceZone::locate($lat, $lng);
         if (! $zone) {

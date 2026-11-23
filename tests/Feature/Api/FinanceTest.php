@@ -3,7 +3,6 @@
 namespace Tests\Feature\Api;
 
 use App\Exceptions\BusinessRuleException;
-use App\Models\DriverPayout;
 use App\Models\LedgerEntry;
 use App\Models\PaymentWebhookEvent;
 use App\Models\Refund;
@@ -11,7 +10,6 @@ use App\Models\ServiceZone;
 use App\Models\SystemSetting;
 use App\Models\Trip;
 use App\Services\Finance\LedgerService;
-use App\Services\Finance\PayoutService;
 use App\Services\Finance\RefundService;
 use App\Services\Pricing\FareCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,41 +87,28 @@ class FinanceTest extends TestCase
         $this->assertTrue(app(LedgerService::class)->isBalanced());
     }
 
-    public function test_payout_requires_balance_and_maker_checker_and_settles_ledger(): void
+    public function test_driver_below_min_balance_cannot_go_online_until_she_tops_up(): void
     {
-        $driver = $this->makeDriver();
-        $payouts = app(PayoutService::class);
+        $driver = $this->makeDriver(online: false);
+        $driver->forceFill(['active_mode' => 'driver'])->save();
+        SystemSetting::set('driver.min_balance', -100);
+        $ledger = app(LedgerService::class);
+        $ledger->post([
+            ['account' => 'driver_payable', 'direction' => 'debit', 'amount' => 300, 'user_id' => $driver->id],
+            ['account' => 'platform_revenue', 'direction' => 'credit', 'amount' => 300],
+        ], 'commission', 'Cash trip commission');
+        $zone = ServiceZone::query()->first();
+        $at = ['lat' => (float) $zone->center_lat, 'lng' => (float) $zone->center_lng];
 
-        // Cash trips leave the driver owing commission: no payout possible.
-        $this->completedPaidTrip($this->makeUser(), $driver);
-        $this->actingAs($driver, 'sanctum')->postJson('/api/v1/driver/payouts', ['amount' => 600])->assertStatus(422)->assertJsonPath('error.code', 'insufficient_balance');
+        $this->actingAs($driver, 'sanctum')->postJson('/api/v1/driver/online', $at)->assertStatus(409)->assertJsonPath('error.code', 'low_balance');
+        $this->actingAs($driver, 'sanctum')->getJson('/api/v1/driver/dashboard')->assertOk()->assertJsonPath('data.amount_due', 300);
+        $this->getJson('/api/v1/driver/payouts')->assertNotFound();
 
-        // Simulate platform-collected earnings (e.g. digital payments) via a balanced adjustment.
-        app(LedgerService::class)->post([
-            ['account' => 'gateway_clearing', 'direction' => 'debit', 'amount' => 8000],
-            ['account' => 'driver_payable', 'direction' => 'credit', 'amount' => 8000, 'user_id' => $driver->id],
-        ], 'adjustment', 'Test digital earnings');
-
-        $this->actingAs($driver, 'sanctum')->postJson('/api/v1/driver/payouts', ['amount' => 100])->assertStatus(422)->assertJsonPath('error.code', 'payout_below_minimum');
-        $payoutId = $this->actingAs($driver, 'sanctum')->postJson('/api/v1/driver/payouts', ['amount' => 6000])->assertCreated()->json('data.id');
-        $payout = DriverPayout::query()->where('uuid', $payoutId)->first();
-        $this->assertEquals('•••••••4567', $payout->account_number_masked);
-
-        $maker = $this->makeAdmin('finance_manager');
-        $checker = $this->makeAdmin('finance_manager');
-        $payouts->approve($maker, $payout);                 // 6000 > 5000 threshold → needs checker
-        $this->assertEquals('approved', $payout->fresh()->status);
-        try {
-            $payouts->markPaid($maker, $payout->fresh(), 'REF1');
-            $this->fail('Cannot pay before second approval');
-        } catch (BusinessRuleException $e) {
-            $this->assertSame('invalid_state', $e->errorCode);
-        }
-        $payouts->approve($checker, $payout->fresh());
-        $payouts->markPaid($checker, $payout->fresh(), 'BANK-REF-1');
-        $this->assertEquals('paid', $payout->fresh()->status);
-        $this->assertEquals(round(8000 - 32.5 - 6000, 2), app(LedgerService::class)->driverBalance($driver->id));
-        $this->assertTrue(app(LedgerService::class)->isBalanced());
+        $ledger->post([
+            ['account' => 'manual_payments_clearing', 'direction' => 'debit', 'amount' => 300],
+            ['account' => 'driver_payable', 'direction' => 'credit', 'amount' => 300, 'user_id' => $driver->id],
+        ], 'driver_deposit', 'Top-up');
+        $this->actingAs($driver, 'sanctum')->postJson('/api/v1/driver/online', $at)->assertOk();
     }
 
     public function test_ledger_entries_are_immutable(): void

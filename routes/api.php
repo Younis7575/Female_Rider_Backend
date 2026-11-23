@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\ContentController;
 use App\Http\Controllers\Api\V1\DeployController;
 use App\Http\Controllers\Api\V1\DriverController;
 use App\Http\Controllers\Api\V1\DriverFinanceController;
+use App\Http\Controllers\Api\V1\EmailAuthController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\PlacesController;
@@ -38,6 +39,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     Route::post('auth/otp/request', [AuthController::class, 'requestOtp'])->middleware('throttle:otp')->name('auth.otp.request');
     Route::post('auth/otp/verify', [AuthController::class, 'verifyOtp'])->middleware('throttle:otp-verify')->name('auth.otp.verify');
+    // Email + password accounts (email OTP on registration and on every login)
+    Route::post('auth/register', [EmailAuthController::class, 'register'])->middleware('throttle:otp');
+    Route::post('auth/register/verify', [EmailAuthController::class, 'verifyRegistration'])->middleware('throttle:otp-verify');
+    Route::post('auth/login', [EmailAuthController::class, 'login'])->middleware('throttle:otp');
+    Route::post('auth/login/verify', [EmailAuthController::class, 'verifyLogin'])->middleware('throttle:otp-verify');
+    Route::post('auth/email-otp/resend', [EmailAuthController::class, 'resend'])->middleware('throttle:otp');
+    Route::post('auth/password/forgot', [EmailAuthController::class, 'forgot'])->middleware('throttle:otp');
+    Route::post('auth/password/reset', [EmailAuthController::class, 'reset'])->middleware('throttle:otp-verify');
 
     Route::post('webhooks/payments/{provider}', [PaymentController::class, 'webhook'])->middleware('throttle:60,1')->where('provider', '[a-z0-9_]+');
 
@@ -104,7 +113,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('documents', [DriverController::class, 'documents']);
             Route::post('documents', [DriverController::class, 'uploadDocument'])->middleware('throttle:30,10');
             Route::post('submit', [DriverController::class, 'submit']);
-            Route::put('payout-account', [DriverController::class, 'updatePayoutAccount']);
             Route::post('online', [DriverController::class, 'online']);
             Route::post('offline', [DriverController::class, 'offline']);
             Route::post('location', [DriverController::class, 'location'])->middleware('throttle:location');
@@ -115,11 +123,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('earnings', [DriverFinanceController::class, 'earnings']);
             Route::get('ledger', [DriverFinanceController::class, 'ledger']);
             Route::get('statements', [DriverFinanceController::class, 'statement']);
-            Route::get('payouts', [DriverFinanceController::class, 'payouts']);
             Route::get('payment-info', [DriverFinanceController::class, 'paymentInfo']);
             Route::get('deposits', [DriverFinanceController::class, 'deposits']);
             Route::post('deposits', [DriverFinanceController::class, 'submitDeposit'])->middleware('throttle:10,60');
-            Route::post('payouts', [DriverFinanceController::class, 'requestPayout'])->middleware('idempotency');
         });
 
         // Trips

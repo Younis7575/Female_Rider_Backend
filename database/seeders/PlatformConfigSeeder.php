@@ -62,6 +62,7 @@ class PlatformConfigSeeder extends Seeder
             ['payments.manual.min_amount', 100, 'payments', 'integer', 'Minimum manual payment (PKR)'],
             ['payments.manual.max_amount', 100000, 'payments', 'integer', 'Maximum manual payment (PKR)'],
             ['driver.min_age', 18, 'driver', 'integer', 'Minimum driver age'],
+            ['driver.min_balance', -500, 'driver', 'integer', 'Lowest balance (PKR) a driver may have and still go online; below this she must top up via JazzCash'],
             ['trip.enforce_arrival_radius', false, 'trip', 'boolean', 'Require driver to be near pickup to mark arrival'],
         ];
         foreach ($settings as [$key, $value, $group, $type, $desc]) {

@@ -50,8 +50,6 @@ class DriverOnboardingTest extends TestCase
         foreach (DriverProfile::REQUIRED_DOCUMENTS as $type) {
             $api->post('/api/v1/driver/documents', ['type' => $type, 'file' => UploadedFile::fake()->image("$type.jpg")], ['Accept' => 'application/json'])->assertCreated();
         }
-        $api->postJson('/api/v1/driver/submit', ['accept_agreement' => true])->assertStatus(422)->assertJsonPath('error.details.missing.0', 'payout account');
-        $api->putJson('/api/v1/driver/payout-account', ['payout_method' => 'jazzcash', 'payout_account_title' => 'Sara Test', 'payout_account_number' => '03001234567'])->assertOk();
         // Re-editing without re-sending masked encrypted fields keeps the stored values.
         $api->putJson('/api/v1/driver/profile', ['full_name' => 'Sara T.', 'date_of_birth' => '1995-01-01', 'license_expiry' => now()->addYears(2)->toDateString(), 'address' => 'Karachi', 'emergency_contact_name' => 'Mum'])->assertOk();
         $this->assertSame('42101-1234567-1', $user->driverProfile()->first()->cnic_number);

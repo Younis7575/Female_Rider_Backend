@@ -160,20 +160,6 @@ class DriverController extends Controller
         return ApiResponse::ok(new DriverProfileResource($this->onboarding->submit($request->user(), $request->ip())), 'Application submitted for review.');
     }
 
-    public function updatePayoutAccount(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'payout_method' => ['required', Rule::in(['bank_transfer', 'jazzcash', 'easypaisa'])],
-            'payout_account_title' => ['required', 'string', 'max:120'],
-            'payout_account_number' => ['required', 'string', 'regex:/^[A-Za-z0-9]{8,34}$/'],
-        ]);
-        $profile = $this->onboarding->profileFor($request->user());
-        $profile->fill($data)->save();
-        AuditLog::record('driver.payout_account_updated', $profile, [], ['method' => $data['payout_method']], [], $request->user());
-
-        return ApiResponse::ok(new DriverProfileResource($profile), 'Payout account saved.');
-    }
-
     // ---- Availability ---------------------------------------------------
 
     public function online(Request $request): JsonResponse

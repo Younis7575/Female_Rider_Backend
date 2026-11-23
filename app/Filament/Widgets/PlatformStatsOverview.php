@@ -4,7 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Enums\DriverStatus;
 use App\Enums\TripStatus;
-use App\Models\DriverPayout;
+use App\Models\DriverDeposit;
 use App\Models\DriverProfile;
 use App\Models\Incident;
 use App\Models\Payment;
@@ -73,8 +73,8 @@ class PlatformStatsOverview extends StatsOverviewWidget
             $stats[] = Stat::make('Cash pending', 'PKR '.number_format((float) Payment::query()->where('status', 'pending')->where('method', 'cash')->sum('amount')))
                 ->description(Payment::query()->where('status', 'paid')->count().' payments settled')
                 ->descriptionIcon('heroicon-m-clock')->color('warning');
-            $stats[] = Stat::make('Payout exceptions', DriverPayout::query()->whereIn('status', ['requested', 'approved', 'processing', 'failed'])->count())
-                ->description('Awaiting approval or payment')->descriptionIcon('heroicon-m-wallet')->color('gray');
+            $stats[] = Stat::make('Driver payments to verify', DriverDeposit::query()->where('status', 'pending')->count())
+                ->description('JazzCash top-ups awaiting approval')->descriptionIcon('heroicon-m-wallet')->color('gray');
         }
 
         return $stats;

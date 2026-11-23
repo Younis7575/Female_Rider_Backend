@@ -23,6 +23,8 @@ return [
         // Store-review / QA numbers (E.164, comma separated) that always use OTP_TEST_CODE and
         // never send an SMS. Works in every environment; keep the list short and private.
         'test_numbers' => array_values(array_filter(array_map('trim', explode(',', (string) env('OTP_TEST_NUMBERS', ''))))),
+        // Store-review / QA email addresses that use OTP_TEST_CODE and never receive an email.
+        'test_emails' => array_values(array_filter(array_map(fn ($e) => strtolower(trim($e)), explode(',', (string) env('OTP_TEST_EMAILS', ''))))),
         'test_code' => env('OTP_TEST_CODE'),
     ],
 

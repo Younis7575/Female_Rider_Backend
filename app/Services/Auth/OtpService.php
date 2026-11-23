@@ -3,13 +3,16 @@
 namespace App\Services\Auth;
 
 use App\Exceptions\BusinessRuleException;
+use App\Mail\OtpCodeMail;
 use App\Models\OtpCode;
 use App\Services\Sms\SmsSender;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
- * Phone OTP issuance and verification with hashing, expiry, resend cooldown,
+ * Phone / email OTP issuance (an identifier containing "@" is emailed) and verification with hashing, expiry, resend cooldown,
  * per-phone hourly caps and attempt limits.
  */
 class OtpService
@@ -46,7 +49,17 @@ class OtpService
             'expires_at' => now()->addSeconds($cfg['ttl_seconds']),
         ]);
 
-        if (! $isTestNumber) {
+        if (! $isTestNumber && str_contains($phone, '@')) {
+            try {
+                Mail::to($phone)->send(new OtpCodeMail($code, $purpose, intdiv($cfg['ttl_seconds'], 60)));
+            } catch (\Throwable $e) {
+                Log::error('OTP email failed', ['error' => $e->getMessage()]);
+                // Undo so the user can retry straight away.
+                OtpCode::query()->where('phone', $phone)->where('purpose', $purpose)->latest('id')->first()?->delete();
+                RateLimiter::clear($hourKey);
+                throw new BusinessRuleException('We could not send the email right now. Please try again in a minute.', 'email_failed', 503);
+            }
+        } elseif (! $isTestNumber) {
             $this->sms->send($phone, "Your FemaleRider verification code is {$code}. It expires in ".intdiv($cfg['ttl_seconds'], 60).' minutes. Never share this code.');
         }
 
@@ -65,7 +78,8 @@ class OtpService
         $code = (string) config('femalerider.otp.test_code');
 
         return preg_match('/^\d{'.(int) config('femalerider.otp.length').'}$/', $code) === 1
-            && in_array($phone, config('femalerider.otp.test_numbers', []), true);
+            && (in_array($phone, config('femalerider.otp.test_numbers', []), true)
+                || in_array(strtolower($phone), config('femalerider.otp.test_emails', []), true));
     }
 
     public function verify(string $phone, string $code, string $purpose = 'login'): void
