@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\DriverDeposit;
 use App\Models\DriverDocument;
 use App\Models\EligibilityVerification;
 use App\Models\IncidentEvidence;
@@ -26,6 +27,7 @@ class SecureFileController extends Controller
                 'back' => $m->document_back_path, 'selfie' => $m->selfie_path, default => $m->document_path,
             }, 'eligibility.review'],
             'evidence' => [$m = IncidentEvidence::query()->findOrFail($id), $m->file_path, 'safety.evidence.view'],
+            'payment-proof' => [$m = DriverDeposit::query()->findOrFail($id), $m->screenshot_path, 'finance.view'],
             default => abort(404),
         };
 

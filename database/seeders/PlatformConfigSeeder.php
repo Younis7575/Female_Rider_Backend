@@ -56,6 +56,11 @@ class PlatformConfigSeeder extends Seeder
             ['app.latest_version', '1.0.0', 'app', 'string', 'Latest mobile app version'],
             ['surge.enabled', true, 'pricing', 'boolean', 'Global surge kill-switch'],
             ['dispatch.request_ttl_seconds', 300, 'dispatch', 'integer', 'Ride request lifetime (seconds)'],
+            ['payments.manual.account_title', 'FemaleRider', 'payments', 'string', 'JazzCash account title shown to drivers'],
+            ['payments.manual.jazzcash_number', '', 'payments', 'string', 'FemaleRider JazzCash number drivers send money to (empty = payments off)'],
+            ['payments.manual.instructions', 'Send the amount from your JazzCash app to the number above, then enter the TID from the confirmation message and attach a screenshot.', 'payments', 'string', 'Instructions shown on the payment screen'],
+            ['payments.manual.min_amount', 100, 'payments', 'integer', 'Minimum manual payment (PKR)'],
+            ['payments.manual.max_amount', 100000, 'payments', 'integer', 'Maximum manual payment (PKR)'],
             ['driver.min_age', 18, 'driver', 'integer', 'Minimum driver age'],
             ['trip.enforce_arrival_radius', false, 'trip', 'boolean', 'Require driver to be near pickup to mark arrival'],
         ];

@@ -116,6 +116,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('ledger', [DriverFinanceController::class, 'ledger']);
             Route::get('statements', [DriverFinanceController::class, 'statement']);
             Route::get('payouts', [DriverFinanceController::class, 'payouts']);
+            Route::get('payment-info', [DriverFinanceController::class, 'paymentInfo']);
+            Route::get('deposits', [DriverFinanceController::class, 'deposits']);
+            Route::post('deposits', [DriverFinanceController::class, 'submitDeposit'])->middleware('throttle:10,60');
             Route::post('payouts', [DriverFinanceController::class, 'requestPayout'])->middleware('idempotency');
         });
 

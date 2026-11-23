@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DriverPayoutResource;
 use App\Http\Resources\LedgerEntryResource;
+use App\Models\DriverDeposit;
 use App\Models\DriverOnlineSession;
 use App\Models\DriverPayout;
 use App\Models\LedgerEntry;
 use App\Models\Trip;
 use App\Services\Finance\LedgerService;
+use App\Services\Finance\ManualPaymentService;
 use App\Services\Finance\PayoutService;
 use App\Support\ApiResponse;
 use Carbon\Carbon;
@@ -132,5 +134,43 @@ class DriverFinanceController extends Controller
         $data = $request->validate(['amount' => ['required', 'numeric', 'min:1']]);
 
         return ApiResponse::created(new DriverPayoutResource($this->payouts->request($request->user(), (float) $data['amount'])), 'Payout requested.');
+    }
+
+    /** FemaleRider's JazzCash account + the driver's current balance (negative = she owes). */
+    public function paymentInfo(Request $request, ManualPaymentService $manual): JsonResponse
+    {
+        $user = $request->user();
+        $balance = $this->ledger->driverBalance($user->id);
+        $pending = DriverDeposit::query()->where('driver_id', $user->id)->where('status', 'pending')->sum('amount');
+
+        return ApiResponse::ok([
+            'account' => $manual->accountDetails(),
+            'balance' => $balance,
+            'amount_due' => $balance < 0 ? round(-$balance, 2) : 0,
+            'pending_amount' => round((float) $pending, 2),
+            'currency' => 'PKR',
+        ]);
+    }
+
+    public function deposits(Request $request): JsonResponse
+    {
+        $items = DriverDeposit::query()->where('driver_id', $request->user()->id)->latest('id')->limit(50)->get();
+
+        return ApiResponse::ok($items->map->toPayload()->values());
+    }
+
+    public function submitDeposit(Request $request, ManualPaymentService $manual): JsonResponse
+    {
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:1', 'max:1000000'],
+            'transaction_ref' => ['required', 'string', 'min:6', 'max:40', 'regex:/^[A-Za-z0-9\-\s]+$/'],
+            'screenshot' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,heic', 'max:8192'],
+            'sender_number' => ['nullable', 'string', 'regex:/^\+?[\d\s\-]{10,16}$/'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ], ['transaction_ref.required' => 'Enter the JazzCash transaction ID (TID).', 'screenshot.required' => 'Attach the payment screenshot.']);
+
+        $deposit = $manual->submit($request->user(), (float) $data['amount'], $data['transaction_ref'], $request->file('screenshot'), $data['sender_number'] ?? null, $data['note'] ?? null);
+
+        return ApiResponse::ok($deposit->toPayload(), 'Payment submitted. We will verify it shortly.', 201);
     }
 }
