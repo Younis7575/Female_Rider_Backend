@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\EmailAuthController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\PlacesController;
+use App\Http\Controllers\Api\V1\RatingController;
 use App\Http\Controllers\Api\V1\RideController;
 use App\Http\Controllers\Api\V1\SafetyController;
 use App\Http\Controllers\Api\V1\SupportController;
@@ -62,6 +63,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('sessions/revoke-others', [AuthController::class, 'revokeOtherSessions']);
 
         Route::get('me', [AccountController::class, 'me']);
+        Route::get('me/ratings', [RatingController::class, 'index']);
         Route::put('me', [AccountController::class, 'update']);
         Route::post('me/photo', [AccountController::class, 'uploadPhoto']);
         Route::post('me/mode', [AccountController::class, 'switchMode']);

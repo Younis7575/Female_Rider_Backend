@@ -67,6 +67,18 @@ class TripLifecycleTest extends TestCase
         $this->assertEquals(-32.5, $stmt->json('data.summary.closing_balance'));
         $this->actingAs($customer, 'sanctum')->postJson("/api/v1/trips/{$tripId}/rating", ['score' => 5, 'tags' => ['Safe driving']])->assertCreated();
         $this->actingAs($customer, 'sanctum')->postJson("/api/v1/trips/{$tripId}/rating", ['score' => 4])->assertStatus(409);
+
+        // Driver rates the rider; each sees what they received
+        $this->actingAs($driver, 'sanctum')->postJson("/api/v1/trips/{$tripId}/rating", ['score' => 4, 'comment' => 'Nice rider'])->assertCreated();
+        $this->actingAs($driver, 'sanctum')->getJson("/api/v1/trips/{$tripId}")->assertOk()->assertJsonPath('data.their_rating', 5)->assertJsonPath('data.my_rating', 4);
+        $mine = $this->actingAs($driver, 'sanctum')->getJson('/api/v1/me/ratings?as=driver')->assertOk();
+        $this->assertSame(1, $mine->json('data.count'));
+        $this->assertEquals(5, $mine->json('data.average'));
+        $this->assertSame(['Safe driving'], $mine->json('data.items.0.tags'));
+        $this->assertSame('customer', $mine->json('data.items.0.from'));
+        $rider = $this->actingAs($customer, 'sanctum')->getJson('/api/v1/me/ratings')->assertOk();
+        $this->assertSame('Nice rider', $rider->json('data.items.0.comment'));
+        $this->assertSame(1, $rider->json('data.breakdown.4'));
     }
 
     public function test_pin_locks_after_max_attempts(): void

@@ -67,6 +67,8 @@ class TripResource extends JsonResource
                 'unread' => $t->messages()->where('sender_id', '!=', $viewer->id)->whereNull('read_at')->count(),
             ] : null,
             'my_rating' => optional($t->ratings->firstWhere('rater_id', $viewer?->id))->score,
+            // Rating the other person gave the viewer on this trip (hidden ones excluded).
+            'their_rating' => $viewer ? optional($t->ratings->first(fn ($r) => $r->ratee_id === $viewer->id && $r->moderation_status !== 'hidden'))->score : null,
             'timeline' => [
                 'assigned_at' => $t->assigned_at?->toIso8601String(),
                 'en_route_at' => $t->en_route_at?->toIso8601String(),
