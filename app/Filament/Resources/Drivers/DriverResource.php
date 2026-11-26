@@ -164,9 +164,16 @@ class DriverResource extends Resource
                 ->action(fn ($record) => $run($record, DriverStatus::UnderReview)),
             Action::make('approve')->label('Approve driver')->color('success')->icon(Heroicon::OutlinedCheckBadge)
                 ->visible(fn ($record) => in_array($record->status, [DriverStatus::Pending, DriverStatus::UnderReview, DriverStatus::MoreInfoRequired], true) && $canReview())
-                ->requiresConfirmation()->modalDescription('All mandatory documents and the vehicle must already be approved.')
+                ->requiresConfirmation()->modalDescription('Check the documents and vehicle below first. Approving also approves all uploaded documents and the vehicle.')
                 ->schema([Textarea::make('notes')->label('Internal notes')])
-                ->action(fn ($record, array $data) => $run($record, DriverStatus::Approved, null, $data['notes'] ?? null)),
+                ->action(function ($record, array $data) {
+                    try {
+                        app(DriverOnboardingService::class)->approveWithDocuments(auth('admin')->user(), $record, $data['notes'] ?? null);
+                        Notification::make()->title('Driver approved')->success()->send();
+                    } catch (BusinessRuleException $e) {
+                        Notification::make()->title('Cannot approve')->body($e->getMessage())->danger()->send();
+                    }
+                }),
             Action::make('requestInfo')->label('Request documents')->color('warning')->icon(Heroicon::OutlinedDocumentPlus)
                 ->visible(fn ($record) => in_array($record->status, [DriverStatus::Pending, DriverStatus::UnderReview], true) && $canReview())
                 ->schema([Textarea::make('reason')->required()->label('What the driver must fix (shown to driver)'), Textarea::make('notes')->label('Internal notes')])

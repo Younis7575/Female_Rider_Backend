@@ -4,7 +4,6 @@ namespace Tests\Feature\Api;
 
 use App\Enums\DriverStatus;
 use App\Exceptions\BusinessRuleException;
-use App\Models\DriverDocument;
 use App\Models\DriverProfile;
 use App\Services\Driver\DriverOnboardingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -70,10 +69,22 @@ class DriverOnboardingTest extends TestCase
             $this->assertSame('documents_pending', $e->errorCode);
         }
 
-        $profile->documents->each(fn (DriverDocument $d) => $svc->reviewDocument($admin, $d, true));
-        $svc->reviewVehicle($admin, $profile->primaryVehicle, true);
-        $svc->setStatus($admin, $profile->fresh(), DriverStatus::Approved);
+        // A rejected document still blocks one-click approval
+        $first = $profile->documents->first();
+        $svc->reviewDocument($admin, $first, false, 'Blurry');
+        try {
+            $svc->approveWithDocuments($admin, $profile->fresh());
+            $this->fail('Rejected document should block approval.');
+        } catch (BusinessRuleException $e) {
+            $this->assertSame('documents_missing', $e->errorCode);
+        }
+        $svc->reviewDocument($admin, $first->fresh(), true);
+
+        // One click approves the remaining pending documents, the vehicle and the driver
+        $svc->approveWithDocuments($admin, $profile->fresh());
         $this->assertTrue($user->fresh()->isApprovedDriver());
+        $this->assertSame('approved', $profile->primaryVehicle()->first()->status);
+        $this->assertSame(0, $profile->documents()->where('status', '!=', 'approved')->count());
 
         $this->actingAs($user->fresh(), 'sanctum')->postJson('/api/v1/me/mode', ['mode' => 'driver'])->assertOk();
         $this->actingAs($user->fresh(), 'sanctum')->postJson('/api/v1/driver/online', ['lat' => 24.86, 'lng' => 67.0])->assertOk();

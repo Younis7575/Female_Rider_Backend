@@ -208,6 +208,33 @@ class DriverOnboardingService
         return $profile->fresh();
     }
 
+    /**
+     * One-click approval: approves every uploaded (not rejected) required document and the
+     * vehicle, then the driver. Missing or rejected documents still block approval.
+     */
+    public function approveWithDocuments(AdminUser $admin, DriverProfile $profile, ?string $notes = null): DriverProfile
+    {
+        $profile->load('documents', 'primaryVehicle');
+        $docs = $profile->latestDocuments()->keyBy('type');
+        $missing = collect(DriverProfile::REQUIRED_DOCUMENTS)->reject(fn ($t) => $docs->has($t) && $docs->get($t)->status !== 'rejected')->values();
+        if ($missing->isNotEmpty()) {
+            throw new BusinessRuleException('These documents are missing or rejected – request them from the driver: '.$missing->implode(', '), 'documents_missing');
+        }
+
+        return DB::transaction(function () use ($admin, $profile, $docs, $notes) {
+            foreach (DriverProfile::REQUIRED_DOCUMENTS as $type) {
+                if ($docs->get($type)->status !== 'approved') {
+                    $this->reviewDocument($admin, $docs->get($type), true);
+                }
+            }
+            if ($profile->primaryVehicle && $profile->primaryVehicle->status !== 'approved') {
+                $this->reviewVehicle($admin, $profile->primaryVehicle, true);
+            }
+
+            return $this->setStatus($admin, $profile->fresh(), DriverStatus::Approved, null, $notes);
+        });
+    }
+
     public function reviewDocument(AdminUser $admin, DriverDocument $doc, bool $approve, ?string $reason = null): DriverDocument
     {
         $doc->update([
