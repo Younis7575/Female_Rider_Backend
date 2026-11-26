@@ -28,7 +28,7 @@ class PlatformConfigSeeder extends Seeder
 
         $categories = [
             ['FemaleRider Bike', 'bike', 'bike', 'Quick, affordable solo rides', 1, 60, 18, 2.5, 120, 0, 2, 50, 5],
-            ['FemaleRider Rickshaw', 'rickshaw', 'rickshaw', 'Comfortable 3-seat auto rickshaw', 3, 90, 28, 3, 180, 0, 3, 80, 5],
+            ['FemaleRider Scooty', 'scooty', 'scooty', 'Easy scooty rides around town', 1, 55, 16, 2.5, 110, 0, 2, 50, 5],
             ['FemaleRider Mini', 'mini', 'car', 'Compact AC car for up to 4', 4, 140, 40, 4, 260, 10, 4, 120, 5],
             ['FemaleRider Comfort', 'comfort', 'car_premium', 'Spacious sedans, top-rated drivers', 4, 200, 55, 5, 380, 15, 5, 150, 5],
         ];
@@ -43,6 +43,8 @@ class PlatformConfigSeeder extends Seeder
         }
 
         // Late-night rule (22:00–05:00) +15% on all categories.
+        VehicleCategory::query()->where('slug', 'rickshaw')->update(['is_active' => false]);
+
         foreach (VehicleCategory::all() as $c) {
             FareRule::query()->updateOrCreate(['vehicle_category_id' => $c->id, 'name' => 'Late night'], [
                 'time_multiplier' => 1.15, 'applies_from' => '22:00:00', 'applies_to' => '05:00:00', 'is_active' => true,

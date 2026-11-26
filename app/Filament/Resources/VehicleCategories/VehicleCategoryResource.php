@@ -45,7 +45,7 @@ class VehicleCategoryResource extends Resource
             Section::make('Vehicle class')->columns(3)->schema([
                 TextInput::make('name')->required(),
                 TextInput::make('slug')->required()->alphaDash()->unique(ignoreRecord: true),
-                Select::make('icon')->options(['bike' => 'Bike', 'rickshaw' => 'Rickshaw', 'car' => 'Car', 'car_premium' => 'Premium car'])->required(),
+                Select::make('icon')->options(['bike' => 'Bike', 'scooty' => 'Scooty', 'rickshaw' => 'Rickshaw', 'car' => 'Car', 'car_premium' => 'Premium car'])->required(),
                 TextInput::make('description')->columnSpan(2),
                 TextInput::make('capacity')->numeric()->minValue(1)->maxValue(12)->required(),
                 TextInput::make('sort_order')->numeric()->default(0),

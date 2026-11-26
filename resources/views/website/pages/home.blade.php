@@ -127,7 +127,7 @@
                     @foreach ($categories as $category)
                         @php
                             $ico = match (true) {
-                                str_contains($category->icon ?? '', 'bike') => 'bike',
+                                str_contains($category->icon ?? '', 'bike'), str_contains($category->icon ?? '', 'scooty') => 'bike',
                                 str_contains($category->icon ?? '', 'rickshaw') => 'rickshaw',
                                 default => 'car',
                             };
