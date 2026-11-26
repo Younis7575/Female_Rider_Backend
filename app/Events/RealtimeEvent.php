@@ -46,7 +46,9 @@ class RealtimeEvent implements ShouldBroadcast
 
     public static function send(array $channels, string $event, array $payload = []): void
     {
-        if (empty($channels)) {
+        // No broadcaster configured (shared hosting: clients poll REST) – nothing to send,
+        // and queueing the event would try to reach Redis.
+        if (empty($channels) || config('broadcasting.default') === 'null') {
             return;
         }
         try {
