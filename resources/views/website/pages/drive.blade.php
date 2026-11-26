@@ -136,7 +136,7 @@
             </div>
             <ol class="relative mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-5">
                 @foreach ([
-                    ['smartphone', 'Get the app', 'Download FemaleRider and sign up with your mobile number.'],
+                    ['smartphone', 'Get the app', 'Download FemaleRider and create your account with your email.'],
                     ['id', 'Verify yourself', 'Complete the eligibility review with your CNIC.'],
                     ['doc', 'Add documents', 'Upload your licence, registration and photos.'],
                     ['check-circle', 'Get approved', 'Our team reviews your application and lets you know.'],

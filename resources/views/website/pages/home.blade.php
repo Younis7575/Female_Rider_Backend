@@ -19,7 +19,7 @@
                     FemaleRider connects women riders with verified women drivers. Name a fair price, pick the offer you like, and ride with a trip PIN and live sharing built in.
                 </p>
                 <div class="mt-9 flex flex-col gap-3 sm:flex-row">
-                    <a href="#download" class="btn-primary !px-7 !py-3.5 text-base">Get the app</a>
+                    <a href="{{ route('website.download.android') }}" class="btn-primary !px-7 !py-3.5 text-base">Get the app</a>
                     <a href="{{ route('website.drive') }}" class="btn-ghost !px-7 !py-3.5 text-base">Become a driver @include('website.partials.icon', ['name' => 'arrow-right', 'class' => 'size-4'])</a>
                 </div>
                 <dl class="mt-12 grid max-w-xl grid-cols-1 gap-5 sm:grid-cols-3">

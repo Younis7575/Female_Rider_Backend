@@ -74,7 +74,7 @@
                 </nav>
 
                 <div class="hidden items-center gap-3 lg:flex">
-                    <a href="{{ route('website.home') }}#download" class="btn-primary !px-5 !py-2.5">Get the app</a>
+                    <a href="{{ route('website.download.android') }}" class="btn-primary !px-5 !py-2.5">Get the app</a>
                 </div>
 
                 <button type="button" data-nav-toggle aria-expanded="false" aria-controls="mobile-menu"
@@ -95,7 +95,7 @@
                         <a href="{{ $item['href'] }}" @if($item['active']) aria-current="page" @endif
                            class="rounded-2xl px-4 py-3.5 text-lg font-semibold {{ $item['active'] ? 'bg-crimson-50 text-crimson-700' : 'text-ink hover:bg-ink/5' }}">{{ $item['label'] }}</a>
                     @endforeach
-                    <a href="{{ route('website.home') }}#download" class="btn-primary mt-4 !py-4 text-base">Get the app</a>
+                    <a href="{{ route('website.download.android') }}" class="btn-primary mt-4 !py-4 text-base">Get the app</a>
                     <a href="{{ route('website.drive') }}" class="btn-ghost !py-4 text-base">Become a driver</a>
                 </nav>
             </div>

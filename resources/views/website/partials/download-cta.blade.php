@@ -5,10 +5,10 @@
             <div class="relative grid items-center gap-12 lg:grid-cols-2">
                 <div>
                     <span class="eyebrow-light">@include('website.partials.icon', ['name' => 'smartphone', 'class' => 'size-3.5']) The FemaleRider app</span>
-                    <h2 class="mt-5 text-3xl font-extrabold leading-tight text-white sm:text-4xl lg:text-5xl">Your city, on your terms.<br class="hidden sm:block"> Coming soon to your phone.</h2>
-                    <p class="mt-5 max-w-xl text-lg text-white/80">One app for riders and drivers. We're putting the finishing touches on FemaleRider for Android and iPhone — launching first in Karachi, Lahore and Islamabad.</p>
+                    <h2 class="mt-5 text-3xl font-extrabold leading-tight text-white sm:text-4xl lg:text-5xl">Your city, on your terms.<br class="hidden sm:block"> Now on Android.</h2>
+                    <p class="mt-5 max-w-xl text-lg text-white/80">One app for riders and drivers. Download FemaleRider for Android, create your account and start riding — iPhone is coming soon.</p>
                     <div class="mt-8">@include('website.partials.store-badges', ['dark' => true])</div>
-                    <p class="mt-5 text-sm text-white/65">Want to hear the moment we launch? <a href="{{ route('website.contact') }}" class="font-semibold text-white underline underline-offset-4">Leave us a message</a>.</p>
+                    <p class="mt-5 text-sm text-white/70">Installing on Android: open the downloaded <strong>FemaleRider.apk</strong> and, if asked, allow “Install unknown apps” for your browser. @if (session('ios_notice'))<br><strong>The iPhone app is coming soon.</strong>@endif</p>
                 </div>
                 <div class="relative mx-auto hidden w-full max-w-sm lg:block" aria-hidden="true">
                     @include('website.partials.phone-mock')

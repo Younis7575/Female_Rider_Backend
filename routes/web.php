@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Website\AppDownloadController;
 use App\Http\Controllers\Website\CmsPageController;
 use App\Http\Controllers\Website\ContactController;
 use App\Http\Controllers\Website\PageController;
@@ -19,6 +20,9 @@ Route::name('website.')->group(function () {
     Route::get('/safety', [PageController::class, 'safety'])->name('safety');
     Route::get('/drive', [PageController::class, 'drive'])->name('drive');
     Route::get('/faq', [PageController::class, 'faq'])->name('faq');
+    Route::get('/download/android', [AppDownloadController::class, 'android'])
+        ->middleware('throttle:30,1,website-download')->name('download.android');
+    Route::redirect('/app', '/download/android');
 
     Route::get('/contact', [ContactController::class, 'show'])->name('contact');
     Route::post('/contact', [ContactController::class, 'store'])
